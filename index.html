@@ -180,33 +180,43 @@
         /* 移动端控制按钮样式 */
         .mobile-controls {
             display: none;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 20px auto;
-            max-width: 240px;
-            position: relative;
+            position: fixed;
+            width: 200px;
+            height: 200px;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
         }
 
-        .mobile-controls button {
-            padding: 0;
-            font-size: 24px;
+        .joystick-base {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .joystick-handle {
+            position: absolute;
+            width: 70px;
+            height: 70px;
             background: linear-gradient(145deg, #ff1a1a, #d4001d);
             border: 2px solid #ffd700;
             border-radius: 50%;
-            width: 65px;
-            height: 65px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2),
                         inset 0 2px 4px rgba(255, 255, 255, 0.3);
-            color: #ffd700;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.1s;
         }
 
-        .mobile-controls button::before {
+        .joystick-handle::before {
             content: '';
             position: absolute;
             top: 0;
@@ -217,42 +227,6 @@
                         rgba(255, 255, 255, 0.2) 0%,
                         rgba(255, 255, 255, 0) 100%);
             border-radius: 50% 50% 0 0;
-        }
-
-        .mobile-controls button:active {
-            background: linear-gradient(145deg, #d4001d, #ff1a1a);
-            transform: translateY(2px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2),
-                        inset 0 2px 4px rgba(255, 255, 255, 0.1);
-        }
-
-        /* 为每个方向按钮添加独特的样式 */
-        #upBtn {
-            transform: translateY(5px);
-        }
-
-        #upBtn::after {
-            content: '↑';
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        #downBtn::after {
-            content: '↓';
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        #leftBtn::after {
-            content: '←';
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        #rightBtn::after {
-            content: '→';
-            font-size: 28px;
-            font-weight: bold;
         }
 
         /* 移动端布局调整 */
@@ -271,7 +245,7 @@
             }
 
             .mobile-controls {
-                display: grid;
+                display: block;
                 margin-top: 30px;
             }
 
@@ -323,12 +297,9 @@
             <button id="resetBtn">重新开始</button>
         </div>
         <div class="mobile-controls">
-            <div></div>
-            <button id="upBtn"></button>
-            <div></div>
-            <button id="leftBtn"></button>
-            <button id="downBtn"></button>
-            <button id="rightBtn"></button>
+            <div class="joystick-base">
+                <div class="joystick-handle"></div>
+            </div>
         </div>
     </div>
 
@@ -676,29 +647,87 @@
             }
 
             initTouchControls() {
-                // 移动端方向按钮控制
-                const buttons = {
-                    'upBtn': 'up',
-                    'downBtn': 'down',
-                    'leftBtn': 'left',
-                    'rightBtn': 'right'
+                const mobileControls = document.querySelector('.mobile-controls');
+                const joystickBase = document.querySelector('.joystick-base');
+                const joystickHandle = document.querySelector('.joystick-handle');
+                let isDragging = false;
+                let startX, startY, currentX, currentY;
+                const maxDistance = 65;
+
+                const showJoystick = (x, y) => {
+                    mobileControls.style.left = `${x}px`;
+                    mobileControls.style.top = `${y}px`;
+                    joystickBase.style.display = 'flex';
+                    startX = x;
+                    startY = y;
                 };
 
-                Object.entries(buttons).forEach(([btnId, dir]) => {
-                    const btn = document.getElementById(btnId);
-                    if (btn) {
-                        btn.addEventListener('touchstart', (e) => {
-                            e.preventDefault();
-                            this.handleDirectionChange(dir);
-                        });
+                const hideJoystick = () => {
+                    joystickBase.style.display = 'none';
+                    joystickHandle.style.transform = 'translate(0, 0)';
+                };
+
+                const updateJoystickPosition = (x, y) => {
+                    const deltaX = x - startX;
+                    const deltaY = y - startY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    const angle = Math.atan2(deltaY, deltaX);
+
+                    const actualDistance = Math.min(distance, maxDistance);
+                    const moveX = actualDistance * Math.cos(angle);
+                    const moveY = actualDistance * Math.sin(angle);
+
+                    joystickHandle.style.transform = `translate(${moveX}px, ${moveY}px)`;
+
+                    const degrees = angle * 180 / Math.PI;
+                    let newDirection;
+
+                    if (distance > 20) {
+                        if (degrees > -45 && degrees <= 45) newDirection = 'right';
+                        else if (degrees > 45 && degrees <= 135) newDirection = 'down';
+                        else if (degrees > 135 || degrees <= -135) newDirection = 'left';
+                        else newDirection = 'up';
+
+                        this.handleDirectionChange(newDirection);
                     }
+                };
+
+                // 全局触摸事件处理
+                document.addEventListener('touchstart', (e) => {
+                    if (e.target === this.canvas) return; // 如果是在画布上触摸，使用画布的滑动控制
+                    e.preventDefault();
+                    isDragging = true;
+                    const touch = e.touches[0];
+                    showJoystick(touch.clientX, touch.clientY);
+                    currentX = touch.clientX;
+                    currentY = touch.clientY;
+                    updateJoystickPosition(currentX, currentY);
                 });
 
-                // 滑动控制
+                document.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    currentX = touch.clientX;
+                    currentY = touch.clientY;
+                    updateJoystickPosition(currentX, currentY);
+                });
+
+                const endDragging = () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    hideJoystick();
+                };
+
+                document.addEventListener('touchend', endDragging);
+                document.addEventListener('touchcancel', endDragging);
+
+                // 保留画布的滑动控制
                 let touchStartX = 0;
                 let touchStartY = 0;
 
                 this.canvas.addEventListener('touchstart', (e) => {
+                    e.stopPropagation(); // 阻止事件冒泡
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
                 });
@@ -715,10 +744,8 @@
                     const deltaY = touchEndY - touchStartY;
                     
                     if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                        // 水平滑动
                         this.handleDirectionChange(deltaX > 0 ? 'right' : 'left');
                     } else {
-                        // 垂直滑动
                         this.handleDirectionChange(deltaY > 0 ? 'down' : 'up');
                     }
                 });
