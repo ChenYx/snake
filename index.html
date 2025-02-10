@@ -155,26 +155,48 @@
             z-index: 1000;
             animation: fadeIn 0.5s ease-out;
             display: none;
+            min-width: 280px;
+            max-width: 90vw;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .celebration h2 {
             font-size: 28px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
 
         .celebration p {
             font-size: 18px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .celebration .poem {
+            font-size: 20px;
+            margin: 25px 0;
+            line-height: 1.6;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         .celebration button {
             background-color: #ffd700;
             color: #d4001d;
-            padding: 10px 25px;
+            padding: 12px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         .celebration button:hover {
             background-color: #ffed4a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
         /* 移动端控制按钮样式 */
@@ -186,6 +208,8 @@
             pointer-events: none;
             z-index: 1000;
             transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.15s ease-out;
         }
 
         .joystick-base {
@@ -193,26 +217,38 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            display: none;
+            background: rgba(255, 255, 255, 0.35);
+            border: 6px solid rgba(255, 215, 0, 0.9);
+            display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4),
+                        inset 0 0 40px rgba(255, 215, 0, 0.3);
+        }
+
+        .joystick-base::after {
+            content: '';
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 3px dashed rgba(255, 215, 0, 0.7);
+            pointer-events: none;
         }
 
         .joystick-handle {
             position: absolute;
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(145deg, #ff1a1a, #d4001d);
-            border: 2px solid #ffd700;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #ff4444, #d4001d);
+            border: 4px solid #ffd700;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2),
-                        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4),
+                        inset 0 3px 6px rgba(255, 255, 255, 0.5);
             transition: transform 0.1s;
         }
 
@@ -224,9 +260,16 @@
             right: 0;
             height: 50%;
             background: linear-gradient(to bottom, 
-                        rgba(255, 255, 255, 0.2) 0%,
+                        rgba(255, 255, 255, 0.5) 0%,
                         rgba(255, 255, 255, 0) 100%);
             border-radius: 50% 50% 0 0;
+        }
+
+        .joystick-handle::after {
+            content: '⇌';
+            color: #ffd700;
+            font-size: 28px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
         }
 
         /* 移动端布局调整 */
@@ -246,7 +289,10 @@
 
             .mobile-controls {
                 display: block;
-                margin-top: 30px;
+            }
+
+            .mobile-controls.active {
+                opacity: 1;
             }
 
             h1 {
@@ -305,9 +351,9 @@
 
     <div class="celebration" id="celebration">
         <h2>🎊 恭喜！新年快乐！🎊</h2>
-        <p>蛇年吉祥，恭喜您达到100分！</p>
+        <p>蛇年吉祥，恭喜您达到<span style="font-size: 24px; font-weight: bold;">100</span>分！</p>
         <p>祝您新的一年：</p>
-        <p style="font-size: 20px; margin: 10px 0;">
+        <p class="poem">
             蛇舞新程展宏图<br>
             福气满满又一春
         </p>
@@ -609,7 +655,14 @@
                 document.getElementById('pauseBtn').textContent = '暂停';
                 document.getElementById('multiplierValue').textContent = `x${this.scoreMultiplier}`;
                 document.getElementById('celebration').style.display = 'none';
+                
+                // 移除所有游戏结束弹窗
+                const gameOverDivs = document.querySelectorAll('.game-over-dialog');
+                gameOverDivs.forEach(div => div.remove());
+                
                 this.draw();
+                // 自动开始游戏
+                this.startGame();
             }
 
             gameOver() {
@@ -617,24 +670,42 @@
                 this.gameLoop = null;
                 // 使用自定义弹窗替代alert
                 const gameOverDiv = document.createElement('div');
+                gameOverDiv.className = 'game-over-dialog';
                 gameOverDiv.style.cssText = `
                     position: fixed;
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
                     background: rgba(212, 0, 29, 0.95);
-                    padding: 20px;
-                    border-radius: 10px;
+                    padding: 30px;
+                    border-radius: 15px;
                     color: #ffd700;
                     text-align: center;
                     z-index: 1000;
                     border: 4px solid #ffd700;
+                    min-width: 280px;
+                    max-width: 90vw;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
                 `;
                 gameOverDiv.innerHTML = `
-                    <h2 style="margin-bottom: 15px;">游戏结束</h2>
-                    <p>恭喜您获得 ${this.score} 分！</p>
-                    <p>蛇年吉祥，万事如意！</p>
-                    <button onclick="location.reload()" style="margin-top: 15px;">再玩一次</button>
+                    <h2 style="margin-bottom: 20px; font-size: 28px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">游戏结束</h2>
+                    <div style="margin: 25px 0; font-size: 20px;">
+                        <p style="margin-bottom: 15px;">恭喜您获得 <span style="font-size: 24px; font-weight: bold;">${this.score}</span> 分！</p>
+                        <p style="font-size: 18px; opacity: 0.9;">蛇年吉祥，万事如意！</p>
+                    </div>
+                    <button onclick="location.reload()" style="
+                        background-color: #ffd700;
+                        color: #d4001d;
+                        padding: 12px 30px;
+                        font-size: 18px;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        margin-top: 10px;
+                        font-weight: bold;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                    ">再玩一次</button>
                 `;
                 document.body.appendChild(gameOverDiv);
             }
@@ -652,19 +723,21 @@
                 const joystickHandle = document.querySelector('.joystick-handle');
                 let isDragging = false;
                 let startX, startY, currentX, currentY;
-                const maxDistance = 65;
+                const maxDistance = 50;
+
+                const hideJoystick = () => {
+                    mobileControls.classList.remove('active');
+                    joystickHandle.style.transform = 'translate(0, 0)';
+                    mobileControls.style.opacity = '0';
+                };
 
                 const showJoystick = (x, y) => {
                     mobileControls.style.left = `${x}px`;
                     mobileControls.style.top = `${y}px`;
-                    joystickBase.style.display = 'flex';
+                    mobileControls.classList.add('active');
+                    mobileControls.style.opacity = '1';
                     startX = x;
                     startY = y;
-                };
-
-                const hideJoystick = () => {
-                    joystickBase.style.display = 'none';
-                    joystickHandle.style.transform = 'translate(0, 0)';
                 };
 
                 const updateJoystickPosition = (x, y) => {
@@ -694,10 +767,26 @@
 
                 // 全局触摸事件处理
                 document.addEventListener('touchstart', (e) => {
-                    if (e.target === this.canvas) return; // 如果是在画布上触摸，使用画布的滑动控制
+                    const touch = e.touches[0];
+                    const target = e.target;
+                    
+                    // 检查是否点击了底部三个控制按钮
+                    const isControl = target.closest('.controls');
+                    
+                    // 检查是否在游戏区域内
+                    const isInCanvas = target === this.canvas;
+                    
+                    if (isControl || !isInCanvas) return;
+
                     e.preventDefault();
                     isDragging = true;
-                    const touch = e.touches[0];
+                    
+                    // 获取canvas的位置信息
+                    const canvasRect = this.canvas.getBoundingClientRect();
+                    // 计算相对于canvas的触摸位置
+                    const touchX = touch.clientX - canvasRect.left;
+                    const touchY = touch.clientY - canvasRect.top;
+                    
                     showJoystick(touch.clientX, touch.clientY);
                     currentX = touch.clientX;
                     currentY = touch.clientY;
@@ -708,6 +797,13 @@
                     if (!isDragging) return;
                     e.preventDefault();
                     const touch = e.touches[0];
+                    
+                    // 获取canvas的位置信息
+                    const canvasRect = this.canvas.getBoundingClientRect();
+                    // 计算相对于canvas的触摸位置
+                    const touchX = touch.clientX - canvasRect.left;
+                    const touchY = touch.clientY - canvasRect.top;
+                    
                     currentX = touch.clientX;
                     currentY = touch.clientY;
                     updateJoystickPosition(currentX, currentY);
@@ -719,36 +815,13 @@
                     hideJoystick();
                 };
 
-                document.addEventListener('touchend', endDragging);
-                document.addEventListener('touchcancel', endDragging);
+                document.addEventListener('touchend', endDragging, { passive: false });
+                document.addEventListener('touchcancel', endDragging, { passive: false });
 
-                // 保留画布的滑动控制
-                let touchStartX = 0;
-                let touchStartY = 0;
-
-                this.canvas.addEventListener('touchstart', (e) => {
-                    e.stopPropagation(); // 阻止事件冒泡
-                    touchStartX = e.touches[0].clientX;
-                    touchStartY = e.touches[0].clientY;
-                });
-
-                this.canvas.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                });
-
-                this.canvas.addEventListener('touchend', (e) => {
-                    const touchEndX = e.changedTouches[0].clientX;
-                    const touchEndY = e.changedTouches[0].clientY;
-                    
-                    const deltaX = touchEndX - touchStartX;
-                    const deltaY = touchEndY - touchStartY;
-                    
-                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                        this.handleDirectionChange(deltaX > 0 ? 'right' : 'left');
-                    } else {
-                        this.handleDirectionChange(deltaY > 0 ? 'down' : 'up');
-                    }
-                });
+                // 移除画布的单独触摸控制，因为已经集成到摇杆控制中
+                this.canvas.removeEventListener('touchstart', this.canvas._touchStartHandler);
+                this.canvas.removeEventListener('touchmove', this.canvas._touchMoveHandler);
+                this.canvas.removeEventListener('touchend', this.canvas._touchEndHandler);
             }
 
             handleDirectionChange(newDirection) {
