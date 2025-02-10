@@ -181,26 +181,78 @@
         .mobile-controls {
             display: none;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 15px;
             margin: 20px auto;
-            max-width: 200px;
+            max-width: 240px;
+            position: relative;
         }
 
         .mobile-controls button {
-            padding: 15px;
-            font-size: 20px;
-            background-color: rgba(212, 0, 29, 0.8);
-            border: none;
+            padding: 0;
+            font-size: 24px;
+            background: linear-gradient(145deg, #ff1a1a, #d4001d);
+            border: 2px solid #ffd700;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 65px;
+            height: 65px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2),
+                        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            color: #ffd700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mobile-controls button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to bottom, 
+                        rgba(255, 255, 255, 0.2) 0%,
+                        rgba(255, 255, 255, 0) 100%);
+            border-radius: 50% 50% 0 0;
         }
 
         .mobile-controls button:active {
-            background-color: rgba(255, 26, 26, 0.8);
+            background: linear-gradient(145deg, #d4001d, #ff1a1a);
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2),
+                        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+        }
+
+        /* 为每个方向按钮添加独特的样式 */
+        #upBtn {
+            transform: translateY(5px);
+        }
+
+        #upBtn::after {
+            content: '↑';
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        #downBtn::after {
+            content: '↓';
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        #leftBtn::after {
+            content: '←';
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        #rightBtn::after {
+            content: '→';
+            font-size: 28px;
+            font-weight: bold;
         }
 
         /* 移动端布局调整 */
@@ -220,6 +272,7 @@
 
             .mobile-controls {
                 display: grid;
+                margin-top: 30px;
             }
 
             h1 {
@@ -238,6 +291,7 @@
 
             .mobile-controls button {
                 -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
             }
 
             /* 优化微信端按钮触摸响应 */
@@ -270,11 +324,11 @@
         </div>
         <div class="mobile-controls">
             <div></div>
-            <button id="upBtn">↑</button>
+            <button id="upBtn"></button>
             <div></div>
-            <button id="leftBtn">←</button>
-            <button id="downBtn">↓</button>
-            <button id="rightBtn">→</button>
+            <button id="leftBtn"></button>
+            <button id="downBtn"></button>
+            <button id="rightBtn"></button>
         </div>
     </div>
 
